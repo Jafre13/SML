@@ -1,11 +1,12 @@
 #Cross Validation
-trainsize<-2000
+
 acc<-c()
 
 for (i in 1:10){
-  shuffleData(tmp)
+  print(i)
+  shuffleData(dataset)
   #Run Knn
-  results<-knn(train = train,test=test,cl=trainLabels,k=3)
+  results<-knn(train = train,test=test,cl=trainLabels,k=1)
   acc <-c(acc,accuracy(testLabels,results))
 }
 
