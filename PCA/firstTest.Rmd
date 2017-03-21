@@ -1,0 +1,70 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+First load the data into a dataframe
+```{r}
+rawdata = loadSinglePersonsData(100,"group10",1,"~/trunk/2017/")
+newdata = data.frame(rawdata)
+```
+
+Shuffling the data for one person, and extracting labels from dataset
+```{r}
+
+shuffle <- newdata[sample(nrow(newdata)),]
+labels <- shuffle$X1
+shuffle <- subset(shuffle,select = -c(X1))
+
+```
+
+
+```{r}
+pca <- prcomp(shuffle, scale = TRUE,center=TRUE)
+vari = pca$sdev**2
+cs = pca$sdev/sum(pca$sdev)
+str("Std")
+head(pca$sdev,n=10)
+str("Variance")
+head(vari,n=10)
+str("Cumsum Variance")
+head(vari/sum(vari))
+```
+
+```{r}
+str("Variance")
+plot(pca,type="l")
+```
+```{r}
+str("Cumulative Sum of variance")
+plot(cumsum(cs),type="o")
+```
+```{r}
+train = pca$x[1:1000,1:18]
+trainlabels = labels[1:1000]
+test = pca$x[1000:2000,1:18]
+testlabels = labels[1000:2000]
+results = knn(train,test,k=1,cl = trainlabels)
+accuracy(results,testlabels)
+
+
+
+```
+
+```{r}
+accuracy <- function(results,testlabels) {
+  count = 0
+  for (i in 1:length(results)){
+    if (results[i]==testlabels[i]){
+      count = count+1
+    }
+  }
+  return((count/length(results))*100)
+  
+}
+```
+
+```{r}
+summary(prcomp(newdata))
+```
+```
