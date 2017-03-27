@@ -1,0 +1,79 @@
+---
+title: "KMeans Clustering Excercise"
+author: "Jakob Frederiksen - jafre13@student.sdu.dk"
+output: html_notebook
+
+---
+```{r, message=FALSE, warning=FALSE, echo=FALSE}
+source("~/School/SML/SML/HelperMethods/loadImage.R")
+source("~/School/SML/SML/HelperMethods/random.R")
+library("gridExtra")
+```
+
+```{r, echo=FALSE}
+#Get images and labels
+folder="~/trunk/2017/"
+person1 = loadSinglePersonsData(DPI = 100,groupNr ="group10",groupMemberNr = 1,folder = folder)
+person2 = loadSinglePersonsData(DPI = 100,groupNr ="group12",groupMemberNr = 1,folder = folder)
+person3 = loadSinglePersonsData(DPI = 100,groupNr ="group0",groupMemberNr = 1,folder = folder)
+person1_df = data.frame(person1)
+person2_df = data.frame(person2)
+person3_df = data.frame(person3)
+
+#Shuffling
+person1_df = person1_df[sample(nrow(person1_df)),]
+person2_df = person2_df[sample(nrow(person2_df)),]
+person3_df = person3_df[sample(nrow(person3_df)),]
+person1_labels = person1_df$X1
+person2_labels = person2_df$X1
+person3_labels = person3_df$X1
+person1_df = subset(person1_df,select = -c(X1))
+person2_df = subset(person2_df,select = -c(X1))
+person3_df = subset(person3_df,select = -c(X1))
+
+```
+# 1 - KMeans Clustering
+```{r, echo = FALSE}
+cipher_cluster = c()
+label_cluster = c()
+k = c(1,10,25,50,75,100,150,200,250,300,350)
+#k=c(10)
+accuracies = c()
+times = c()
+for (clustersize in k){
+  print(clustersize)
+  cipher_cluster = c()
+  label_cluster = c()
+  train_data = c()
+  for (i in 0:9){
+    clusterdata = kmeans(person2_df[person2_labels == i,],clustersize)
+    cipher_cluster[[i+1]] = clusterdata$centers
+    label_cluster[[i+1]] = c(1:clustersize)*0+i
+  }
+  
+  train_labels = factor(unlist(label_cluster))
+  train_data = cipher_cluster[[1]]
+  for (i in 2:10){
+    train_data = rbind(train_data,cipher_cluster[[i]])
+  }
+  st = Sys.time()
+  results = knn(train = train_data,test = person1_df,cl = train_labels)
+  et = Sys.time()
+  runtime = (et-st)
+  times = c(times,runtime)
+  acc = accuracy(results,person1_labels)
+  accuracies = c(accuracies,acc)
+}
+```
+
+```{r,echo=FALSE,fig.align='center',fig.show='hold'}
+
+p1 = qplot(seq_along(accuracies),1,accuracies) +ylab("Accuracy in %")+geom_smooth(method="glm",formula = y ~ splines::bs(x,3), se=FALSE)
+
+p2 = qplot(seq_along(times),times) +scale_x_continuous(name = "cluster size",limits=k)+ylab("Seconds")+geom_smooth(method="glm",formula = y ~ splines::bs(x,3), se=FALSE)
+p1
+grid.arrange(p1,p2,ncol = 2)
+
+```
+
+This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
