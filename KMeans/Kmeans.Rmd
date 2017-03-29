@@ -68,9 +68,10 @@ for (clustersize in k){
 
 ```{r,echo=FALSE,fig.align='center',fig.show='hold'}
 
-p1 = qplot(seq_along(accuracies),1,accuracies) +ylab("Accuracy in %")+geom_smooth(method="glm",formula = y ~ splines::bs(x,3), se=FALSE)
-
-p2 = qplot(seq_along(times),times) +scale_x_continuous(name = "cluster size",limits=k)+ylab("Seconds")+geom_smooth(method="glm",formula = y ~ splines::bs(x,3), se=FALSE)
+p1 = qplot(seq_along(accuracies),accuracies) +ylab("Accuracy in %")+geom_smooth(method="glm",formula = y ~ splines::bs(x,3), se=FALSE)
+axis(1,xaxp=k)
+p1
+p2 = qplot(seq_along(times),times) +ylab("Seconds")+geom_smooth(method="glm",formula = y ~ splines::bs(x,3), se=FALSE)
 p1
 grid.arrange(p1,p2,ncol = 2)
 
