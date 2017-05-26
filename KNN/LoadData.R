@@ -83,10 +83,10 @@ shuffleData <- function(somedata){
 #Set seet and train size
 
 #Load data from images
-tmp<-loadSinglePersonsData(100,"group12","1","~/trunk/2017/")
+#tmp<-loadSinglePersonsData(100,"group10","1","~/trunk/2017/")
 #Convert to dataframe
-tmp<-data.frame(tmp)
-#getSize
+#tmp<-data.frame(tmp)
+
 alldata <- getAllData(dataList)
 # You can now iterate trough the list
 dataset <- alldata[1]
@@ -97,7 +97,66 @@ for(i in 2:length(alldata)){
   idTemp <- data.frame(idTemp)
   dataset <- rbind(dataset, idTemp)
 }
+trainList <- list( list(),
+                  list(1,2,3),
+                  list(1,2,3)
+                  list(1,2,3,4)
+                  #list(),
+                  #list(1),
+                  #list(),
+                  #list(1,2),
+                  #list(1,2),
+                  #list(),
+                  #list(1),
+                  #list(),
+                  #list(1)
+)
+testList <- list( list(1,2,3),
+                  list(),
+                  list(),
+                  list()
+                  #list(),
+                  #list(1),
+                  #list(),
+                  #list(1,2),
+                  #list(1,2),
+                  #list(),
+                  #list(1),
+                  #list(),
+                  #list(1)
+)
 
-datasize<-NROW(tmp)
+
+
+
+
+trainData <- getAllData(trainList)
+# You can now iterate trough the list
+dataset1 <- trainData[1]
+dataset1 <- data.frame(dataset1)
+
+for(i in 2:length(trainData)){
+  idTemp <- trainData[i]
+  idTemp <- data.frame(idTemp)
+  dataset1 <- rbind(dataset1, idTemp)
+}
+
+
+testData <- getAllData(testList)
+# You can now iterate trough the list
+dataset2 <- testData[1]
+dataset2 <- data.frame(dataset2)
+
+for(i in 2:length(testData)){
+  idTemp <- testData[i]
+  idTemp <- data.frame(idTemp)
+  dataset2 <- rbind(dataset2, idTemp)
+}
+
+
+datasize<-NROW(dataset1)+NROW(dataset2)
+trainSize <- NROW(dataset1)
+
+datasize<-NROW(dataset)
 trainSize <- as.integer(datasize*0.9)
 
