@@ -1,56 +1,12 @@
 ---
-title: "R Notebook"
-output: html_notebook
+title: 'Exercise 2: Group 10, Jafre13'
+output:
+  html_document: default
+  html_notebook: default
+  pdf_document: default
 ---
 
-First load the data into a dataframe
-```{r}
-rawdata = loadSinglePersonsData(100,"group10",1,"~/trunk/2017/")
-newdata = data.frame(rawdata)
-```
-
-Shuffling the data for one person, and extracting labels from dataset
-```{r}
-
-shuffle <- newdata[sample(nrow(newdata)),]
-labels <- shuffle$X1
-shuffle <- subset(shuffle,select = -c(X1))
-
-```
-
-
-```{r}
-pca <- prcomp(shuffle, scale = TRUE,center=TRUE)
-vari = pca$sdev**2
-cs = pca$sdev/sum(pca$sdev)
-str("Std")
-head(pca$sdev,n=10)
-str("Variance")
-head(vari,n=10)
-str("Cumsum Variance")
-head(vari/sum(vari))
-```
-
-```{r}
-str("Variance")
-plot(pca,type="l")
-```
-```{r}
-str("Cumulative Sum of variance")
-plot(cumsum(cs),type="o")
-```
-```{r}
-train = pca$x[1:1000,1:18]
-trainlabels = labels[1:1000]
-test = pca$x[1000:2000,1:18]
-testlabels = labels[1000:2000]
-results = knn(train,test,k=1,cl = trainlabels)
-accuracy(results,testlabels)
-
-
-
-```
-
+Accuracy function which will be used later
 ```{r}
 accuracy <- function(results,testlabels) {
   count = 0
@@ -64,7 +20,281 @@ accuracy <- function(results,testlabels) {
 }
 ```
 
+1.1
+First load the data into a dataframe
 ```{r}
-summary(prcomp(newdata))
+source('C:/SML/PCA/loadImage.R')
+library("caret")
+rawdata1 = loadSinglePersonsData(100,"group10",1,"C:/SMLIMAGES/2017/")
+rawdata2 = loadSinglePersonsData(100,"group12",1,"C:/SMLIMAGES/2017/")
+
 ```
+
+Shuffling the data for two persons independent and dependendent, and extracting labels from dataset
+```{r}
+
+p1 = data.frame(rawdata1)
+p2 = data.frame(rawdata2)
+
+combined = rbind(rawdata1,rawdata2)
+doTheShuffle <- function(){
+  independent <<- data.frame(combined)
+  shuffled_inde <<- independent[sample(nrow(independent)),]
+  independent_labels <<- shuffled_inde$X1
+  shuffled_inde <<- subset(shuffled_inde,select = -c(X1))
+}
+
+p1_shuff = p1[sample(nrow(p1)),]
+p2_shuff = p2[sample(nrow(p2)),]
+
+doTheShuffle()
+
+p1_labels = p1_shuff$X1
+p1_shuff = subset(p1_shuff,select = -c(X1))
+p2_labels = p2_shuff$X1
+p2_shuff = subset(p2_shuff,select = -c(X1))
 ```
+
+Performing independent PCA with first 4000 entries, the other 4000 will be used for testing
+```{r}
+inde_pca <- prcomp(shuffled_inde[1:4000,])
+vari = (((inde_pca$sdev)^2)*100)/sum((inde_pca$sdev)^2)
+cs = cumsum(vari)
+```
+Standard deviation:
+```{r}
+head(inde_pca$sdev,n=10)
+```
+Variance
+```{r}
+head(vari,n=10)
+```
+Cumsum Variance
+
+16 PC's to explain 80% of the data
+27 PC's to explain 90% of the data
+38 PC's to explain 95% of the data
+and 74 PC's to explain 99% of the data
+```{r}
+head(cs,n=41)
+
+```
+
+
+Some quick plots of variance and cumsum
+```{r}
+plot(inde_pca,type="l",xlab("PC"))
+```
+The Cummulative variance
+```{r}
+plot(cs,type="o",xlab="PC")
+```
+
+
+```{r}
+train = inde_pca$x
+trainlabels = independent_labels[1:4000]
+test = predict(inde_pca,shuffled_inde[4001:8000,])
+indeAcc = c()
+indeTime = c()
+
+testlabels = independent_labels[4001:8000]
+variances = c(16,27,38,74)
+print(variances)
+k = seq(from=1,to=51,by=10)
+for (j in variances){
+  time = c()
+  acc = c()
+  for (i in k){
+    startTime = Sys.time()
+    results = knn(train[,1:j],test[,1:j],k=i,cl = trainlabels)
+    endtime = Sys.time()
+    time=c(time,(endtime-startTime))
+    acc = c(acc,accuracy(results,testlabels))
+  }
+  
+  indeTime = c(indeTime,time[1])
+  indeAcc = c(indeAcc,acc[1])
+}
+qplot(k,time)
+qplot(k,acc)
+qplot(variances,indeTime,xlab ="Number of PC's")
+qplot(variances,indeAcc,xlab ="Number of PC's")
+
+```
+
+From the plots we can see that k = 1 provides the best accuracy and time, so that k will be used for the future.
+we can also see that time taking for amount of PC's rises linearly while the prediction accuracy flats out the more PC's are added. therefore i have chosen to go with 38 pc's for the future
+
+no to do it with person dependent data. This section hasn't provided great answers as i chose to only use 2 persons data to save computational time. this could explain the low percentage of correct predictions due to us writing digits fairly different
+```{r}
+p1_pca <- prcomp(p1_shuff)
+vari = (((p1_pca$sdev)^2)*100)/sum((p1_pca$sdev)^2)
+
+
+```
+
+```{r}
+train = p1_pca$x
+trainlabels = p1_labels
+test = predict(p1_pca,p2_shuff)
+pacc = c()
+ptime = c()
+
+testlabels = p2_labels
+variances = c(18,29,41,76)
+print(variances)
+k = seq(from=1,to=51,by=10)
+for (j in variances){
+  time = c()
+  acc = c()
+  for (i in k){
+    startTime = Sys.time()
+    results = knn(train[,1:j],test[,1:j],k=i,cl = trainlabels)
+    endtime = Sys.time()
+    time=c(time,(endtime-startTime))
+    acc = c(acc,accuracy(results,testlabels))
+  }
+  
+  qplot(k,time)
+  qplot(k,acc)
+  ptime = c(ptime,time[1])
+  pacc = c(pacc,acc[1])
+}
+qplot(k,time)
+qplot(k,acc)
+qplot(variances,ptime,xlab ="Number of PC's")
+qplot(variances,pacc,xlab ="Number of PC's")
+
+```
+as the person independent data showed, time and accuracy is best at k=1, although the trend doesn't fit for the accuracy when combining more principal components, but as stated earlier, this could be due to majorly different handwriting
+
+
+using scale and center arguments for normalization and standardization
+i decided to use the built in function for scale and centering which as far as i understood, should handle normalization and standardization of the data, i tried by applying my own functions to this, but something went wrong, and i ended up with knn only guessing at 1's.
+
+
+```{r}
+
+indeAcc = c()
+indeTime = c()
+
+
+k = seq(from=1,to=51,by=10)
+
+time = c()
+acc = c()
+for (i in 1:10){
+  doTheShuffle()
+  standard_inde = as.data.frame((shuffled_inde))
+  stand_pca = prcomp(standard_inde[1:7200,], scale. = TRUE, center = TRUE)
+  train = stand_pca$x
+  trainlabels = independent_labels[1:7200]
+  test = predict(stand_pca,shuffled_inde[7201:8000,])
+  testlabels = independent_labels[7201:8000]
+  
+  startTime = Sys.time()
+  results = knn(train[,1:41],test[,1:41],k=1,cl = trainlabels)
+  
+  endtime = Sys.time()
+  time=c(time,(endtime-startTime))
+  acc = c(acc,accuracy(results,testlabels))
+  indeTime = c(indeTime,mean(time))
+  indeAcc = c(indeAcc,mean(acc))
+}
+
+print(mean(indeTime))
+print(mean(indeAcc))
+
+
+
+
+```
+
+by applying this before the pca we can see that time rises a bit, while accuracy stays roughly the same
+
+normalazing and standardizing after pca
+```{r}
+
+indeAcc = c()
+indeTime = c()
+
+print(variances)
+k = seq(from=1,to=51,by=10)
+
+time = c()
+acc = c()
+for (i in 1:10){
+  doTheShuffle()
+  standard_inde = as.data.frame((shuffled_inde))
+  stand_pca = prcomp(standard_inde[1:7200,])
+  train = scale(stand_pca$x)
+  trainlabels = independent_labels[1:7200]
+  test = scale(predict(stand_pca,shuffled_inde[7201:8000,]))
+  testlabels = independent_labels[7201:8000]
+  
+  startTime = Sys.time()
+  results = knn(train[,1:41],test[,1:41],k=1,cl = trainlabels)
+  
+  endtime = Sys.time()
+  time=c(time,(endtime-startTime))
+  acc = c(acc,accuracy(results,testlabels))
+  indeTime = c(indeTime,mean(time))
+  indeAcc = c(indeAcc,mean(acc))
+}
+
+print(mean(indeTime))
+print(mean(indeAcc))
+
+
+
+
+```
+when applying after pca, we can see that we loose a small amount of accuracy, while time taken also rises.
+
+Reconstruction
+
+```{r}
+for (i in 0:9){
+  imageSize = sqrt(ncol(p1)-1)
+  imageMatrix <- matrix( p1[1+i*400,2:ncol(p1)], nrow = imageSize, ncol=imageSize, byrow= FALSE)
+  imageMatrix <- rotate(imageMatrix, 270)
+  image(imageMatrix, col=gray((0:255)/255))
+  
+}
+
+
+```
+When printing out the images, it can be seen that the corners might not have been set properly, which could provide more details at to why some accuracy percentages have been low.
+
+```{r}
+ncol(p1_pca$x)-1
+for (i in 1:10){
+  imageSize = 18
+  imageMatrix <- matrix( p1_pca$x[i*399+i,1:nrow(p1_pca$rotation)-1], nrow = imageSize, ncol=imageSize, byrow= FALSE)
+  imageMatrix <- rotate(imageMatrix, 270)
+  image(imageMatrix, col=gray((0:255)/255))
+  
+}
+```
+To be honest, i have no idea what's happening here, or if i'm doing it right
+but i'm guessing it's PCA trying to do it's own thing
+
+When reconstructing the image from the principal components, we can see the numbers starting to reappear a bit blurry, but for some reason i can't explain, the images keep getting darker.
+```{r, message=FALSE, warning=FALSE}
+
+for (i in 1:10){
+  
+  reco = p1_pca$x[,1:nrow(p1_pca$rotation)] %*% t(p1_pca$rotation[,1:nrow(p1_pca$rotation)])
+  reco <- scale(reco, center = -1 * p1_pca$center, scale=FALSE)
+  dim(reco)
+  imageSize = 18
+  imageMatrix <- matrix(reco[i*399+i,1:18], nrow = imageSize, ncol=imageSize, byrow= FALSE)
+  imageMatrix <- rotate(imageMatrix, 270)
+  image(imageMatrix, col=gray((0:255)/255))
+  
+}
+
+
+```
+

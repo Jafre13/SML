@@ -94,7 +94,7 @@ smoothImage <- function(grayImg){
 #-------------------------------------------------------------
 loadSinglePersonsData <- function(DPI,groupNr,groupMemberNr,folder){
   #load the scaned images
-
+  
   ciffers <- list(readPNG(paste(c(folder,groupNr,"/member",groupMemberNr,"/Ciphers",DPI,"-0.png"), collapse = "")),
                   readPNG(paste(c(folder,groupNr,"/member",groupMemberNr,"/Ciphers",DPI,"-1.png"), collapse = "")),
                   readPNG(paste(c(folder,groupNr,"/member",groupMemberNr,"/Ciphers",DPI,"-2.png"), collapse = "")),
@@ -110,14 +110,17 @@ loadSinglePersonsData <- function(DPI,groupNr,groupMemberNr,folder){
   #   smoothed <- list(1:5)
   prepared <- list(1:5)
   
-  
   #convert the images to gray scale.
   for(i in 1:5)
   {
-    r <-ciffers[[i]][,,1]
-    g <-ciffers[[i]][,,2]
-    b <-ciffers[[i]][,,3]
-    prepared[[i]] <- (r+g+b)/3
+    if( length(dim(ciffers[[1]]) ) == 3 ) {
+      r <-ciffers[[i]][,,1]
+      g <-ciffers[[i]][,,2]
+      b <-ciffers[[i]][,,3]
+      prepared[[i]] <- (r+g+b)/3
+    } else {
+      prepared[[i]] <- ciffers[[i]]
+    }  
   }
   
   #smooth images based on the funtion in the top
@@ -134,11 +137,12 @@ loadSinglePersonsData <- function(DPI,groupNr,groupMemberNr,folder){
   
   #xStepT and yStepT is used to ensure that the feature vectors
   #from all people have the same size.
+  
   xStepT <- 60*DPI/300
   yStepT <- 60*DPI/300
   
   dataMatrix <- matrix(1:((xStepT-2)*(yStepT-2) + 1)*10*20*20, nrow=10*20*20, ncol=(xStepT-2)*(yStepT-2) + 1)
-
+  
   for(pages in 1:5)
   {
     for(box in 1:2)
@@ -149,7 +153,7 @@ loadSinglePersonsData <- function(DPI,groupNr,groupMemberNr,folder){
         for(cifY in 1:20)
         {
           aYbase <- corners[(pages-1)*2 + box,2] + yStep*(cifY-1)
-         
+          
           dataMatrix[((pages-1)*2 + box - 1)*20*20 + (cifY-1)*20 + cifX ,1 ] <- (pages-1)*2 + box - 1
           
           for(px in 1:(xStepT-2))
